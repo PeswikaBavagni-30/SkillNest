@@ -697,12 +697,27 @@ const getMe = async (req, res) => {
   }
 };
 
+/**
+ * Unified Register Controller
+ * POST /api/auth/register
+ * Automatically delegates to provider or customer registration based on role field
+ */
+const registerUser = async (req, res) => {
+  const role = req.body.role ? String(req.body.role).toLowerCase() : "customer";
+  if (role === "provider") {
+    return registerProvider(req, res);
+  }
+  return registerCustomer(req, res);
+};
+
 module.exports = {
   registerCustomer,
   registerProvider,
+  registerUser,
   login,
   forgotPassword,
   resetPassword,
   updateProfile,
   getMe
 };
+

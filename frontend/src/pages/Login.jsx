@@ -50,10 +50,13 @@ function Login() {
         setSuccess(`Welcome back, ${data.user.name || "User"}!`);
 
         // Role-based redirection:
-        // CUSTOMER -> /dashboard
+        // ADMIN -> /admin-dashboard
         // PROVIDER -> /provider-dashboard
+        // CUSTOMER -> /dashboard
         setTimeout(() => {
-          if (data.user.role === "PROVIDER") {
+          if (data.user.role === "ADMIN") {
+            navigate("/admin-dashboard");
+          } else if (data.user.role === "PROVIDER") {
             navigate("/provider-dashboard");
           } else {
             navigate("/dashboard");

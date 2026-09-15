@@ -5,6 +5,10 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
 const supabase = require("./src/config/supabase");
 const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const categoryRoutes = require("./src/routes/categoryRoutes");
+const serviceRoutes = require("./src/routes/serviceRoutes");
+const bookingRoutes = require("./src/routes/bookingRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,8 +29,12 @@ app.use(cors({
 // Parse JSON request bodies
 app.use(express.json());
 
-// Mount Authentication routes
+// Mount API routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/services", serviceRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 // Health check endpoint
 app.get("/api/health", async (req, res) => {

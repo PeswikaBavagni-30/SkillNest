@@ -13,6 +13,7 @@ import CustomerRegister from "./pages/CustomerRegister";
 import ProviderRegister from "./pages/ProviderRegister";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -95,6 +96,16 @@ function App() {
             element={
               <ProtectedRoute allowedRole="PROVIDER">
                 <ProviderDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Admin Dashboard & Provider Verification */}
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute allowedRole="ADMIN">
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

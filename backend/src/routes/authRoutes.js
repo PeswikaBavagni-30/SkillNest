@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   registerCustomer,
   registerProvider,
+  registerUser,
   login,
   forgotPassword,
   resetPassword,
@@ -10,6 +11,9 @@ const {
   getMe
 } = require("../controllers/authController");
 const { authenticateToken } = require("../middleware/authMiddleware");
+
+// Unified Registration route
+router.post("/register", registerUser);
 
 // Customer Registration route (Requirement 1, 2)
 router.post("/register/customer", registerCustomer);

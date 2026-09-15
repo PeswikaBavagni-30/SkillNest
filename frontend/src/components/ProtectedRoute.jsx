@@ -49,6 +49,11 @@ export default function ProtectedRoute({ children, allowedRole }) {
     return <Navigate to="/login" replace />;
   }
 
+  // Admin has superuser access
+  if (user.role === "ADMIN") {
+    return children;
+  }
+
   if (allowedRole && user.role !== allowedRole) {
     if (user.role === "PROVIDER") {
       return <Navigate to="/provider-dashboard" replace />;
