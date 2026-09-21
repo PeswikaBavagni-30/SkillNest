@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "../components/NotificationBell";
+import PaymentModal from "../components/PaymentModal";
 import "./Dashboard.css";
 
 // Helper for category icons
@@ -43,6 +45,10 @@ function CustomerDashboard() {
     const [bookingsLoading, setBookingsLoading] = useState(true);
     const [bookingFilterTab, setBookingFilterTab] = useState("all");
 
+    // Member 4: Payments State
+    const [paymentsMap, setPaymentsMap] = useState({});
+    const [paymentModalBooking, setPaymentModalBooking] = useState(null);
+
     // Book Now Modal State
     const [bookingModalService, setBookingModalService] = useState(null);
     const [bookingDate, setBookingDate] = useState("");
@@ -61,6 +67,7 @@ function CustomerDashboard() {
         fetchServices();
         if (token) {
             fetchCustomerBookings();
+            fetchCustomerPayments();
         }
     }, [token]);
 
@@ -120,6 +127,27 @@ function CustomerDashboard() {
             console.error("Error loading customer bookings:", err);
         } finally {
             setBookingsLoading(false);
+        }
+    };
+
+    const fetchCustomerPayments = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch("http://localhost:5000/api/payments", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const data = await res.json();
+            if (data.success && data.payments) {
+                const pMap = {};
+                data.payments.forEach((p) => {
+                    pMap[p.booking_id] = p;
+                });
+                setPaymentsMap(pMap);
+            }
+        } catch (err) {
+            console.error("Error loading customer payments:", err);
         }
     };
 
@@ -307,10 +335,7 @@ function CustomerDashboard() {
                 </div>
 
                 <div className="dashboard-navbar-right">
-                    <button className="notification-button" title="Notifications">
-                        🔔
-                        <span className="notification-dot"></span>
-                    </button>
+                    <NotificationBell />
 
                     <div
                         className="profile-mini"
@@ -705,11 +730,11 @@ function CustomerDashboard() {
                                                 <strong style={{ fontSize: "18px", color: "#382d12" }}>
                                                     ₹{bk.total_amount}
                                                 </strong>
-                                                <div style={{ marginTop: "4px" }}>
+                                                <div style={{ marginTop: "4px", display: "flex", gap: "6px", justifyContent: "flex-end" }}>
                                                     <span style={{
-                                                        padding: "4px 12px",
+                                                        padding: "4px 10px",
                                                         borderRadius: "20px",
-                                                        fontSize: "12px",
+                                                        fontSize: "11px",
                                                         fontWeight: "800",
                                                         textTransform: "uppercase",
                                                         background:
@@ -723,10 +748,77 @@ function CustomerDashboard() {
                                                     }}>
                                                         {status}
                                                     </span>
+
+                                                    {/* Member 4: Payment Status Indicator */}
+                                                    {(() => {
+                                                        const p = paymentsMap[bk.booking_id];
+                                                        const isPaid = p && p.payment_status === "success";
+                                                        const isFailed = p && p.payment_status === "failed";
+                                                        return (
+                                                            <span style={{
+                                                                padding: "4px 10px",
+                                                                borderRadius: "20px",
+                                                                fontSize: "11px",
+                                                                fontWeight: "800",
+                                                                textTransform: "uppercase",
+                                                                background: isPaid ? "#e1faea" : isFailed ? "#ffebeb" : "#fff8e6",
+                                                                color: isPaid ? "#107c39" : isFailed ? "#c41c1c" : "#835b0a",
+                                                                border: isPaid ? "1px solid #b7ebd0" : "1px solid #ebd08d"
+                                                            }}>
+                                                                {isPaid ? "✓ Paid" : isFailed ? "✕ Pay Failed" : "Unpaid"}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: "flex", gap: "8px" }}>
+                                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                                {/* Member 4: Pay Now Action */}
+                                                {(() => {
+                                                    const p = paymentsMap[bk.booking_id];
+                                                    const isPaid = p && p.payment_status === "success";
+                                                    if (!isPaid && !isCancelled) {
+                                                        return (
+                                                            <button
+                                                                onClick={() => setPaymentModalBooking(bk)}
+                                                                style={{
+                                                                    padding: "8px 14px",
+                                                                    background: "linear-gradient(135deg, #c98e1b, #a7700c)",
+                                                                    border: "none",
+                                                                    borderRadius: "8px",
+                                                                    fontWeight: "700",
+                                                                    fontSize: "13px",
+                                                                    color: "#ffffff",
+                                                                    cursor: "pointer",
+                                                                    boxShadow: "0 2px 6px rgba(201,142,27,0.3)"
+                                                                }}
+                                                            >
+                                                                💳 Pay Now
+                                                            </button>
+                                                        );
+                                                    }
+                                                    if (isPaid) {
+                                                        return (
+                                                            <button
+                                                                onClick={() => navigate(`/payment/${bk.booking_id}`)}
+                                                                style={{
+                                                                    padding: "8px 12px",
+                                                                    background: "#e1faea",
+                                                                    border: "1px solid #b7ebd0",
+                                                                    borderRadius: "8px",
+                                                                    fontWeight: "700",
+                                                                    fontSize: "12px",
+                                                                    color: "#107c39",
+                                                                    cursor: "pointer"
+                                                                }}
+                                                            >
+                                                                Receipt
+                                                            </button>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+
                                                 <button
                                                     onClick={() => setSelectedBookingDetails(bk)}
                                                     style={{
@@ -1315,6 +1407,18 @@ function CustomerDashboard() {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Member 4: Payment Modal */}
+            {paymentModalBooking && (
+                <PaymentModal
+                    booking={paymentModalBooking}
+                    onClose={() => setPaymentModalBooking(null)}
+                    onPaymentSuccess={() => {
+                        fetchCustomerBookings();
+                        fetchCustomerPayments();
+                    }}
+                />
             )}
         </div>
     );

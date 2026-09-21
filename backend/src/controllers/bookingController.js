@@ -157,6 +157,20 @@ const createBooking = async (req, res) => {
     // Attach provider details for response
     const enriched = await attachProviderDetails([newBooking]);
 
+    // Dispatch notification to provider for new booking request
+    try {
+      const notificationService = require("../modules/payments-notifications/notification.service");
+      notificationService.notifyNewBooking({
+        providerId: service.provider_id,
+        serviceName: service.service_name,
+        bookingDate: booking_date,
+        bookingTime: booking_time,
+        customerName: req.user.name
+      }).catch((e) => console.error("notifyNewBooking async error:", e));
+    } catch (notifErr) {
+      console.error("notifyNewBooking error:", notifErr);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Booking request created successfully!",
@@ -417,6 +431,31 @@ const updateBookingStatus = async (req, res) => {
 
     const [withCust] = await attachCustomerDetails([updatedBooking]);
     const [finalEnriched] = await attachProviderDetails([withCust]);
+
+    // Dispatch lifecycle notifications for accepted and completed states
+    try {
+      const notificationService = require("../modules/payments-notifications/notification.service");
+      const serviceName = updatedBooking.services?.service_name || "Service";
+      const customerId = updatedBooking.customer_id;
+      const providerName = finalEnriched?.provider?.full_name || "SkillNest Partner";
+
+      if (normalizedStatus === "accepted") {
+        notificationService.notifyBookingAccepted({
+          customerId,
+          serviceName,
+          bookingDate: updatedBooking.booking_date,
+          providerName
+        }).catch((e) => console.error("notifyBookingAccepted async error:", e));
+      } else if (normalizedStatus === "completed") {
+        notificationService.notifyBookingCompleted({
+          customerId,
+          serviceName,
+          providerName
+        }).catch((e) => console.error("notifyBookingCompleted async error:", e));
+      }
+    } catch (notifErr) {
+      console.error("Booking lifecycle notification error:", notifErr);
+    }
 
     return res.json({
       success: true,

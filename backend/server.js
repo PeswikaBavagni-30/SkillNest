@@ -9,6 +9,8 @@ const userRoutes = require("./src/routes/userRoutes");
 const categoryRoutes = require("./src/routes/categoryRoutes");
 const serviceRoutes = require("./src/routes/serviceRoutes");
 const bookingRoutes = require("./src/routes/bookingRoutes");
+const paymentRoutes = require("./src/modules/payments-notifications/payment.routes");
+const notificationRoutes = require("./src/modules/payments-notifications/notification.routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +37,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Health check endpoint
 app.get("/api/health", async (req, res) => {
@@ -55,7 +59,11 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Start listening
-app.listen(PORT, () => {
-  console.log(`🚀 SkillNest backend listening on http://localhost:${PORT}`);
-});
+// Start listening if run directly
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 SkillNest backend listening on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

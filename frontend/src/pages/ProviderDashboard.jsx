@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "../components/NotificationBell";
 import "./Dashboard.css";
 
 // Helper for category icons
@@ -59,6 +60,9 @@ function ProviderDashboard() {
     const [bookingFilterTab, setBookingFilterTab] = useState("all");
     const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
 
+    // Member 4: Payments State
+    const [paymentsMap, setPaymentsMap] = useState({});
+
     // Initial Load
     useEffect(() => {
         fetchCategories();
@@ -67,6 +71,7 @@ function ProviderDashboard() {
         }
         if (token) {
             fetchProviderBookings();
+            fetchProviderPayments();
         }
     }, [user?.id, token]);
 
@@ -115,6 +120,25 @@ function ProviderDashboard() {
             console.error("Error loading provider bookings:", err);
         } finally {
             setBookingsLoading(false);
+        }
+    };
+
+    const fetchProviderPayments = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch("http://localhost:5000/api/payments", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success && data.payments) {
+                const pMap = {};
+                data.payments.forEach((p) => {
+                    pMap[p.booking_id] = p;
+                });
+                setPaymentsMap(pMap);
+            }
+        } catch (err) {
+            console.error("Error loading provider payments:", err);
         }
     };
 
@@ -336,10 +360,7 @@ function ProviderDashboard() {
                 </Link>
 
                 <div className="provider-navbar-right">
-                    <button className="notification-button" title="Notifications">
-                        🔔
-                        <span className="notification-dot"></span>
-                    </button>
+                    <NotificationBell />
 
                     <div
                         className="profile-mini"
@@ -708,11 +729,11 @@ function ProviderDashboard() {
                                                         <strong style={{ fontSize: "18px", color: "#382d12" }}>
                                                             ₹{bk.total_amount}
                                                         </strong>
-                                                        <div style={{ marginTop: "4px" }}>
+                                                        <div style={{ marginTop: "4px", display: "flex", gap: "6px", justifyContent: "flex-end" }}>
                                                             <span style={{
-                                                                padding: "4px 12px",
+                                                                padding: "4px 10px",
                                                                 borderRadius: "20px",
-                                                                fontSize: "12px",
+                                                                fontSize: "11px",
                                                                 fontWeight: "800",
                                                                 textTransform: "uppercase",
                                                                 background:
@@ -726,6 +747,26 @@ function ProviderDashboard() {
                                                             }}>
                                                                 {status}
                                                             </span>
+
+                                                            {/* Member 4: Payment Status Indicator */}
+                                                            {(() => {
+                                                                const p = paymentsMap[bk.booking_id];
+                                                                const isPaid = p && p.payment_status === "success";
+                                                                return (
+                                                                    <span style={{
+                                                                        padding: "4px 10px",
+                                                                        borderRadius: "20px",
+                                                                        fontSize: "11px",
+                                                                        fontWeight: "800",
+                                                                        textTransform: "uppercase",
+                                                                        background: isPaid ? "#e1faea" : "#fff8e6",
+                                                                        color: isPaid ? "#107c39" : "#835b0a",
+                                                                        border: isPaid ? "1px solid #b7ebd0" : "1px solid #ebd08d"
+                                                                    }}>
+                                                                        {isPaid ? "✓ Paid" : "Unpaid"}
+                                                                    </span>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
 

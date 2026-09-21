@@ -14,6 +14,9 @@ import ProviderRegister from "./pages/ProviderRegister";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import PaymentPage from "./pages/PaymentPage";
+import PaymentResultPage from "./pages/PaymentResultPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -106,6 +109,36 @@ function App() {
             element={
               <ProtectedRoute allowedRole="ADMIN">
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Member 4: Payment Page */}
+          <Route
+            path="/payment/:bookingId"
+            element={
+              <ProtectedRoute allowedRole="CUSTOMER">
+                <PaymentPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Member 4: Payment Result Page */}
+          <Route
+            path="/payment/result"
+            element={
+              <ProtectedRoute allowedRole="CUSTOMER">
+                <PaymentResultPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Member 4: Notifications Hub */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />
