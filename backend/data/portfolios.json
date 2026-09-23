@@ -1,0 +1,18 @@
+[
+  {
+    "id": "port_1790022073435_nhm17",
+    "provider_id": "2b2911ff-864e-435a-a01c-20a1c2d60962",
+    "image_url": "http://localhost:5000/uploads/img_1790022073430_ulwqkd.jpg",
+    "caption": "",
+    "is_primary": true,
+    "created_at": "2026-09-21T20:21:13.435Z"
+  },
+  {
+    "id": "port_1790013354636_marfk",
+    "provider_id": "2ec859a4-02fa-4f5c-a0b0-0ae582d13de5",
+    "image_url": "http://localhost:5000/uploads/img_1790013353593_4r0jko.png",
+    "caption": "",
+    "is_primary": true,
+    "created_at": "2026-09-21T17:55:54.636Z"
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "test_dual_1790020716462@example.com": {
+    "email": "test_dual_1790020716462@example.com",
+    "has_customer": true,
+    "has_provider": true,
+    "created_at": "2026-09-21T19:58:37.720Z",
+    "updated_at": "2026-09-21T19:58:38.032Z"
+  },
+  "single_cust_1790020719213@example.com": {
+    "email": "single_cust_1790020719213@example.com",
+    "has_customer": true,
+    "has_provider": false,
+    "created_at": "2026-09-21T19:58:39.965Z"
+  },
+  "singlecust_only_99@example.com": {
+    "email": "singlecust_only_99@example.com",
+    "has_customer": true,
+    "has_provider": false,
+    "created_at": "2026-09-21T20:00:34.453Z"
+  },
+  "challavidya@gmail.com": {
+    "email": "challavidya@gmail.com",
+    "has_customer": true,
+    "has_provider": true,
+    "created_at": "2026-09-21T20:10:41.657Z",
+    "updated_at": "2026-09-21T20:42:11.555Z"
+  },
+  "peswika@gmail.com": {
+    "email": "peswika@gmail.com",
+    "has_customer": false,
+    "has_provider": true,
+    "created_at": "2026-09-21T20:54:06.864Z"
+  },
+  "ch@gmail.com": {
+    "email": "ch@gmail.com",
+    "has_customer": false,
+    "has_provider": true,
+    "created_at": "2026-09-21T20:58:47.029Z"
+  },
+  "customer@test.com": {
+    "email": "customer@test.com",
+    "has_customer": true,
+    "has_provider": false,
+    "created_at": "2026-09-21T21:08:27.366Z"
+  }
+}

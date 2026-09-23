@@ -33,7 +33,11 @@ export default function NotificationBell() {
     fetchNotifications();
     // Poll every 15 seconds for real-time feel
     const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
+    window.addEventListener("skillnest_refresh_notifications", fetchNotifications);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("skillnest_refresh_notifications", fetchNotifications);
+    };
   }, [token]);
 
   // Close dropdown on outside click

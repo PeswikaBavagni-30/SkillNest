@@ -1,4 +1,5 @@
 const supabase = require("../config/supabase");
+const locationService = require("../modules/location/location.service");
 
 /**
  * Helper to attach customer profile details to a list of bookings
@@ -128,6 +129,37 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // Location-Aware Booking Validation
+    let bookingCity = req.body.city ? String(req.body.city).trim() : "";
+    const bookingState = req.body.state ? String(req.body.state).trim() : "";
+    const bookingPincode = req.body.pincode ? String(req.body.pincode).trim() : "";
+
+    // Fallback: extract city from address if not explicitly passed
+    if (!bookingCity && address) {
+      const parts = address.split(/[,\-\n]/).map((p) => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        if (!/^\d{6}$/.test(part) && part.length > 2 && !["india", "bharat"].includes(part.toLowerCase())) {
+          bookingCity = part;
+          break;
+        }
+      }
+    }
+
+    const servesRequestedLocation = await locationService.isProviderServingLocation(service.provider_id, {
+      city: bookingCity,
+      state: bookingState,
+      pincode: bookingPincode,
+      address: address.trim(),
+      serviceLocation: service.location || ""
+    });
+
+    if (!servesRequestedLocation) {
+      return res.status(400).json({
+        success: false,
+        message: "This provider does not currently provide services in this location."
+      });
+    }
+
     const totalAmount = Number(service.price) || 0;
 
     const bookingPayload = {
@@ -157,9 +189,11 @@ const createBooking = async (req, res) => {
     // Attach provider details for response
     const enriched = await attachProviderDetails([newBooking]);
 
-    // Dispatch notification to provider for new booking request
+    // Dispatch notifications to BOTH provider and customer
     try {
       const notificationService = require("../modules/payments-notifications/notification.service");
+      
+      // Notify Provider of new request
       notificationService.notifyNewBooking({
         providerId: service.provider_id,
         serviceName: service.service_name,
@@ -167,8 +201,17 @@ const createBooking = async (req, res) => {
         bookingTime: booking_time,
         customerName: req.user.name
       }).catch((e) => console.error("notifyNewBooking async error:", e));
+
+      // Notify Customer with immediate confirmation
+      notificationService.notifyBookingCreated({
+        customerId: customerId,
+        serviceName: service.service_name,
+        bookingDate: booking_date,
+        bookingTime: booking_time,
+        totalAmount: totalAmount
+      }).catch((e) => console.error("notifyBookingCreated async error:", e));
     } catch (notifErr) {
-      console.error("notifyNewBooking error:", notifErr);
+      console.error("Booking dispatch notification error:", notifErr);
     }
 
     return res.status(201).json({

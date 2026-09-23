@@ -19,6 +19,7 @@ import PaymentResultPage from "./pages/PaymentResultPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SkillNestAIChat from "./components/SkillNestAIChat";
 
 function App() {
   return (
@@ -151,6 +152,7 @@ function App() {
 
         </Routes>
 
+        <SkillNestAIChat />
       </BrowserRouter>
     </AuthProvider>
   );

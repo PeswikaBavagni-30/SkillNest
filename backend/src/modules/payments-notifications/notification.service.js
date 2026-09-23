@@ -56,6 +56,18 @@ class NotificationService {
   }
 
   /**
+   * Dispatch notification confirming a newly placed booking to the customer
+   * Recipient: Customer
+   */
+  async notifyBookingCreated({ customerId, serviceName, bookingDate, bookingTime, totalAmount }) {
+    return this.createNotification({
+      userId: customerId,
+      title: "Booking Submitted",
+      message: `Your appointment for "${serviceName}" on ${bookingDate} at ${bookingTime} (₹${totalAmount}) has been placed. Provider has been notified.`
+    });
+  }
+
+  /**
    * Dispatch notification when a provider accepts a booking
    * Recipient: Customer
    */

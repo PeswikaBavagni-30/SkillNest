@@ -5,9 +5,13 @@ const {
   updateUserProfile,
   getAllUsers,
   verifyProvider,
-  deleteUser
+  deleteUser,
+  switchUserMode
 } = require("../controllers/userController");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+
+// PUT /api/users/switch-mode - Protected: Switch between Customer and Provider mode
+router.put("/switch-mode", authenticateToken, switchUserMode);
 
 // GET /api/users/profile - Protected: Current authenticated profile
 router.get("/profile", authenticateToken, getUserProfile);

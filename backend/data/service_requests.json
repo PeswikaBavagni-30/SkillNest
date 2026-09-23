@@ -1,0 +1,23 @@
+[
+  {
+    "id": "req_1790022260183_4wowq",
+    "customer_id": "12dc6ec6-23dc-4b6a-b34d-42b21b6051c8",
+    "customer_name": "Rupa Sri",
+    "title": "face pack",
+    "category": "Beauty, Salon & Mehendi",
+    "category_id": "12fb2840-17c6-403c-9530-a2ebec811cd0",
+    "description": "face mask and eyebrow removal",
+    "budget": 300,
+    "budget_max": 300,
+    "deadline": "2026-07-08",
+    "preferred_date": "2026-07-08",
+    "location": "anamudi hostel,iiit kottayam, kottayam",
+    "city": "kottayam",
+    "state": "kerala",
+    "pincode": "686635",
+    "area": "anamudi hostel,iiit kottayam",
+    "status": "open",
+    "created_at": "2026-09-21T20:24:20.183Z",
+    "updated_at": "2026-09-21T20:24:20.183Z"
+  }
+]

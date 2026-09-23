@@ -1,5 +1,6 @@
 const supabase = require("../config/supabase");
 const { updateProfile, getMe } = require("./authController");
+const dualRoleService = require("../modules/auth/dualRole.service");
 
 /**
  * User Profile Controller
@@ -124,10 +125,95 @@ const deleteUser = async (req, res) => {
   }
 };
 
+/**
+ * Switch Active User Mode (Customer <-> Provider)
+ * PUT /api/users/switch-mode
+ * Body: { mode: 'customer' | 'provider' }
+ */
+const switchUserMode = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+    const mode = req.body.mode || req.body.targetMode;
+
+    if (!mode || typeof mode !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Target mode is required ('customer' or 'provider')."
+      });
+    }
+
+    const normalizedMode = mode.toLowerCase().trim();
+    if (!["customer", "provider"].includes(normalizedMode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid mode. Allowed modes are 'customer' or 'provider'."
+      });
+    }
+
+    // Strictly enforce same-email dual registration requirement
+    if (req.user.role !== "ADMIN" && !dualRoleService.isDualRole(userEmail)) {
+      return res.status(403).json({
+        success: false,
+        message: "Mode switching is only available if you register with the same email as both a Customer and a Provider."
+      });
+    }
+
+    const currentRole = req.user.role;
+    const newRole = currentRole === "ADMIN" ? "admin" : normalizedMode;
+
+    const { data: updatedUser, error } = await supabase
+      .from("users")
+      .update({
+        role: newRole,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("switchUserMode database error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to switch mode: " + error.message
+      });
+    }
+
+    const isProfileBuilt = Boolean(updatedUser.phone || updatedUser.address);
+
+    return res.json({
+      success: true,
+      message: `Successfully switched to ${normalizedMode.toUpperCase()} mode!`,
+      active_role: normalizedMode.toUpperCase(),
+      user: {
+        id: updatedUser.user_id,
+        name: updatedUser.full_name,
+        email: updatedUser.email,
+        phone: updatedUser.phone || null,
+        address: updatedUser.address || null,
+        role: (currentRole === "ADMIN" ? "ADMIN" : normalizedMode.toUpperCase()),
+        active_role: normalizedMode.toUpperCase(),
+        is_verified: updatedUser.is_verified,
+        isProfileBuilt,
+        can_switch_mode: true
+      }
+    });
+  } catch (err) {
+    console.error("switchUserMode error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error switching user mode.",
+      error: err.message
+    });
+  }
+};
+
 module.exports = {
   getUserProfile,
   updateUserProfile,
   getAllUsers,
   verifyProvider,
-  deleteUser
+  deleteUser,
+  switchUserMode
 };

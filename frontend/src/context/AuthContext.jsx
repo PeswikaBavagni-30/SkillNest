@@ -89,6 +89,29 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const switchMode = async (targetMode) => {
+    const storedToken = localStorage.getItem("skillnest_token");
+    if (!storedToken) throw new Error("No active session.");
+
+    const res = await fetch("http://localhost:5000/api/users/switch-mode", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${storedToken}`
+      },
+      body: JSON.stringify({ mode: targetMode })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Failed to switch mode.");
+    }
+
+    setUser(data.user);
+    localStorage.setItem("skillnest_user", JSON.stringify(data.user));
+    return data.user;
+  };
+
   const logoutUser = () => {
     setUser(null);
     setToken(null);
@@ -104,6 +127,7 @@ export function AuthProvider({ children }) {
         loading,
         loginUser,
         updateUser,
+        switchMode,
         logoutUser,
         isAuthenticated: !!user
       }}

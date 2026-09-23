@@ -1,0 +1,86 @@
+{
+  "bd2205db-82b9-45b3-a955-25bf55a6ed06": {
+    "user_id": "bd2205db-82b9-45b3-a955-25bf55a6ed06",
+    "city": "Kottayam",
+    "state": "Kerala",
+    "country": "India",
+    "pincode": "686001",
+    "area": "Baker Junction",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "Baker Junction, Kottayam, Kerala - 686001, India",
+    "updated_at": "2026-09-21T18:53:17.335Z"
+  },
+  "b677bbbc-34df-4004-89a1-45c039c8573e": {
+    "user_id": "b677bbbc-34df-4004-89a1-45c039c8573e",
+    "city": "Kottayam",
+    "state": "Kerala",
+    "country": "India",
+    "pincode": "686002",
+    "area": "Collectorate",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "Collectorate, Kottayam, Kerala - 686002, India",
+    "updated_at": "2026-09-21T18:53:18.135Z"
+  },
+  "d56c91bf-8206-42e3-8ace-f03e9bc3e6fb": {
+    "user_id": "d56c91bf-8206-42e3-8ace-f03e9bc3e6fb",
+    "city": "Bengaluru",
+    "state": "",
+    "country": "India",
+    "pincode": "",
+    "area": "",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "Bengaluru, India",
+    "updated_at": "2026-09-21T19:26:55.226Z"
+  },
+  "12dc6ec6-23dc-4b6a-b34d-42b21b6051c8": {
+    "user_id": "12dc6ec6-23dc-4b6a-b34d-42b21b6051c8",
+    "city": "kottayam",
+    "state": "kerala",
+    "country": "India",
+    "pincode": "686635",
+    "area": "",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "kottayam, kerala - 686635, India",
+    "updated_at": "2026-09-21T20:08:10.949Z"
+  },
+  "77cae288-9a8e-4ea7-b912-a2b5ca5e3cdd": {
+    "user_id": "77cae288-9a8e-4ea7-b912-a2b5ca5e3cdd",
+    "city": "Bangalore",
+    "state": "",
+    "country": "India",
+    "pincode": "",
+    "area": "",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "Bangalore, India",
+    "updated_at": "2026-09-21T19:58:38.033Z"
+  },
+  "ee588163-da31-4fef-baf1-36adc4e0bc8d": {
+    "user_id": "ee588163-da31-4fef-baf1-36adc4e0bc8d",
+    "city": "Mumbai",
+    "state": "",
+    "country": "India",
+    "pincode": "",
+    "area": "",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "Mumbai, India",
+    "updated_at": "2026-09-21T19:58:39.788Z"
+  },
+  "2b2911ff-864e-435a-a01c-20a1c2d60962": {
+    "user_id": "2b2911ff-864e-435a-a01c-20a1c2d60962",
+    "city": "kottayam",
+    "state": "kerala",
+    "country": "India",
+    "pincode": "686635",
+    "area": "",
+    "latitude": null,
+    "longitude": null,
+    "formatted_address": "kottayam, kerala - 686635, India",
+    "updated_at": "2026-09-21T20:11:49.893Z"
+  }
+}

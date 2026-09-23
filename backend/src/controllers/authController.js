@@ -1,6 +1,8 @@
 const supabase = require("../config/supabase");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const locationService = require("../modules/location/location.service");
+const dualRoleService = require("../modules/auth/dualRole.service");
 
 /**
  * Strict Password Policy Validator (Requirement 1)
@@ -76,14 +78,46 @@ const registerCustomer = async (req, res) => {
     // Check if user already exists in public users table
     const { data: existingUser } = await supabase
       .from("users")
-      .select("email")
+      .select("*")
       .eq("email", normalizedEmail)
       .single();
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "An account with this email already exists. Please log in."
+      const status = dualRoleService.getAccountStatus(normalizedEmail);
+      if (status.has_customer) {
+        return res.status(400).json({
+          success: false,
+          message: "An account with this email already exists as a Customer. Please log in."
+        });
+      }
+
+      // User exists as Provider, now registering with same email as Customer -> Dual Role unlocked!
+      dualRoleService.recordCustomerRegistration(normalizedEmail);
+
+      let userLoc = null;
+      if (req.body.city) {
+        userLoc = await locationService.setUserLocation(existingUser.user_id, {
+          city: req.body.city,
+          state: req.body.state,
+          pincode: req.body.pincode,
+          country: req.body.country,
+          area: req.body.area
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Customer profile activated for your account! You can now switch between Customer and Provider modes.",
+        user: {
+          id: existingUser.user_id,
+          name: existingUser.full_name,
+          email: existingUser.email,
+          role: "CUSTOMER",
+          is_verified: true,
+          isProfileBuilt: Boolean(existingUser.phone || existingUser.address),
+          location: userLoc,
+          can_switch_mode: true
+        }
       });
     }
 
@@ -153,6 +187,20 @@ const registerCustomer = async (req, res) => {
       });
     }
 
+    let userLoc = null;
+    if (req.body.city) {
+      userLoc = await locationService.setUserLocation(profile.user_id, {
+        city: req.body.city,
+        state: req.body.state,
+        pincode: req.body.pincode,
+        country: req.body.country,
+        area: req.body.area
+      });
+    }
+
+    dualRoleService.recordCustomerRegistration(normalizedEmail);
+    const canSwitch = dualRoleService.isDualRole(normalizedEmail);
+
     return res.status(201).json({
       success: true,
       message: "Customer registration successful! You can now log in.",
@@ -162,7 +210,9 @@ const registerCustomer = async (req, res) => {
         email: profile.email,
         role: "CUSTOMER",
         is_verified: true,
-        isProfileBuilt: false
+        isProfileBuilt: false,
+        location: userLoc,
+        can_switch_mode: canSwitch
       }
     });
   } catch (err) {
@@ -212,14 +262,46 @@ const registerProvider = async (req, res) => {
     // Check if user already exists
     const { data: existingUser } = await supabase
       .from("users")
-      .select("email")
+      .select("*")
       .eq("email", normalizedEmail)
       .single();
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "An account with this email already exists. Please log in."
+      const status = dualRoleService.getAccountStatus(normalizedEmail);
+      if (status.has_provider) {
+        return res.status(400).json({
+          success: false,
+          message: "An account with this email already exists as a Provider. Please log in."
+        });
+      }
+
+      // User exists as Customer, now registering with same email as Provider -> Dual Role unlocked!
+      dualRoleService.recordProviderRegistration(normalizedEmail);
+
+      let userLoc = null;
+      if (req.body.city) {
+        userLoc = await locationService.setUserLocation(existingUser.user_id, {
+          city: req.body.city,
+          state: req.body.state,
+          pincode: req.body.pincode,
+          country: req.body.country,
+          area: req.body.area
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Provider profile activated for your account! You can now switch between Customer and Provider modes.",
+        user: {
+          id: existingUser.user_id,
+          name: existingUser.full_name,
+          email: existingUser.email,
+          role: "PROVIDER",
+          is_verified: existingUser.is_verified || false,
+          isProfileBuilt: Boolean(existingUser.phone || existingUser.address),
+          location: userLoc,
+          can_switch_mode: true
+        }
       });
     }
 
@@ -291,6 +373,20 @@ const registerProvider = async (req, res) => {
       });
     }
 
+    let userLoc = null;
+    if (req.body.city) {
+      userLoc = await locationService.setUserLocation(profile.user_id, {
+        city: req.body.city,
+        state: req.body.state,
+        pincode: req.body.pincode,
+        country: req.body.country,
+        area: req.body.area
+      });
+    }
+
+    dualRoleService.recordProviderRegistration(normalizedEmail);
+    const canSwitch = dualRoleService.isDualRole(normalizedEmail);
+
     return res.status(201).json({
       success: true,
       message: "Provider registration successful! Your verification application is pending review.",
@@ -300,7 +396,9 @@ const registerProvider = async (req, res) => {
         email: profile.email,
         role: "PROVIDER",
         is_verified: false,
-        isProfileBuilt: false
+        isProfileBuilt: false,
+        location: userLoc,
+        can_switch_mode: canSwitch
       }
     });
   } catch (err) {
@@ -418,6 +516,9 @@ const login = async (req, res) => {
 
     const normalizedRole = (profile.role || "customer").toUpperCase();
     const isProfileBuilt = Boolean(profile.phone || profile.address);
+    const userLoc = await locationService.getUserLocation(profile.user_id);
+
+    const canSwitch = dualRoleService.isDualRole(profile.email);
 
     return res.json({
       success: true,
@@ -430,7 +531,9 @@ const login = async (req, res) => {
         address: profile.address || null,
         role: normalizedRole, // "CUSTOMER" or "PROVIDER"
         is_verified: profile.is_verified, // Provider verification status
-        isProfileBuilt: isProfileBuilt
+        isProfileBuilt: isProfileBuilt,
+        location: userLoc,
+        can_switch_mode: canSwitch
       },
       session: {
         access_token: sessionToken,
@@ -551,12 +654,25 @@ const resetPassword = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user?.id || req.body.userId;
-    const { name, phone, address } = req.body;
+    const { name, phone, address, city, state, country, pincode, area, latitude, longitude } = req.body;
 
     if (!userId) {
       return res.status(400).json({
         success: false,
         message: "User ID is required to update profile."
+      });
+    }
+
+    let updatedLocation = null;
+    if (city && city.trim()) {
+      updatedLocation = await locationService.setUserLocation(userId, {
+        city,
+        state,
+        country,
+        pincode,
+        area,
+        latitude,
+        longitude
       });
     }
 
@@ -566,6 +682,7 @@ const updateProfile = async (req, res) => {
     if (name && name.trim()) updates.full_name = name.trim();
     if (phone && phone.trim()) updates.phone = phone.trim();
     if (address && address.trim()) updates.address = address.trim();
+    else if (updatedLocation && updatedLocation.formatted_address) updates.address = updatedLocation.formatted_address;
 
     const { data: profile, error } = await supabase
       .from("users")
@@ -589,6 +706,9 @@ const updateProfile = async (req, res) => {
     }
 
     const isProfileBuilt = Boolean(profile.phone || profile.address);
+    if (!updatedLocation) {
+      updatedLocation = await locationService.getUserLocation(userId);
+    }
 
     return res.json({
       success: true,
@@ -601,7 +721,8 @@ const updateProfile = async (req, res) => {
         address: profile.address || null,
         role: (profile.role || "customer").toUpperCase(),
         is_verified: profile.is_verified,
-        isProfileBuilt: isProfileBuilt
+        isProfileBuilt: isProfileBuilt,
+        location: updatedLocation
       }
     });
   } catch (err) {
@@ -674,6 +795,9 @@ const getMe = async (req, res) => {
     }
 
     const isProfileBuilt = Boolean(profile?.phone || profile?.address);
+    const userLoc = await locationService.getUserLocation(profile.user_id);
+
+    const canSwitch = dualRoleService.isDualRole(profile.email);
 
     return res.json({
       success: true,
@@ -685,7 +809,9 @@ const getMe = async (req, res) => {
         address: profile.address || null,
         role: (profile.role || "customer").toUpperCase(),
         is_verified: profile.is_verified,
-        isProfileBuilt: isProfileBuilt
+        isProfileBuilt: isProfileBuilt,
+        location: userLoc,
+        can_switch_mode: canSwitch
       }
     });
   } catch (err) {

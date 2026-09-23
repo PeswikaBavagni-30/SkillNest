@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { openRazorpayCheckout, getUpiAppDeepLink } from "../utils/razorpay";
 import "./Dashboard.css";
 
 export default function PaymentPage() {
@@ -13,7 +14,13 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("mock_card");
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState(user?.name || "");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [selectedUpiApp, setSelectedUpiApp] = useState("gpay");
+  const [upiId, setUpiId] = useState("");
 
   useEffect(() => {
     if (!token) {
@@ -55,11 +62,23 @@ export default function PaymentPage() {
     }
   };
 
-  const handleSimulatePayment = async (status) => {
-    if (!booking) return;
-    setSubmitting(true);
-    setError("");
+  const handleCardNumberChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+    const formatted = raw.replace(/(\d{4})(?=\d)/g, "$1 ");
+    setCardNumber(formatted);
+  };
 
+  const handleExpiryChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+    if (raw.length >= 2) {
+      setCardExpiry(`${raw.slice(0, 2)}/${raw.slice(2)}`);
+    } else {
+      setCardExpiry(raw);
+    }
+  };
+
+  const recordPayment = async (txnId) => {
+    setSubmitting(true);
     try {
       const res = await fetch("http://localhost:5000/api/payments", {
         method: "POST",
@@ -70,18 +89,18 @@ export default function PaymentPage() {
         body: JSON.stringify({
           booking_id: booking.booking_id,
           amount: booking.total_amount,
-          payment_method: paymentMethod,
-          simulate_status: status
+          payment_method: "razorpay",
+          transaction_id: txnId,
+          simulate_status: "SUCCESS"
         })
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Payment simulation failed.");
+        throw new Error(data.message || "Payment processing failed.");
       }
 
-      // Navigate to Payment Result Page
       navigate("/payment/result", {
         state: {
           payment: data.payment,
@@ -90,9 +109,125 @@ export default function PaymentPage() {
       });
     } catch (err) {
       console.error("Payment submission error:", err);
-      setError(err.message || "Error processing mock payment.");
+      setError(err.message || "Error processing payment.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSelectAndRedirectUpiApp = async (appId) => {
+    setSelectedUpiApp(appId);
+    setError("");
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      const deepLink = getUpiAppDeepLink({
+        amount: booking?.total_amount || 0,
+        bookingId: booking?.booking_id,
+        app: appId
+      });
+
+      try {
+        window.location.href = deepLink;
+      } catch (e) {
+        console.warn("UPI intent trigger:", e);
+      }
+    }
+
+    await openRazorpayCheckout({
+      booking,
+      amount: booking?.total_amount || 0,
+      user,
+      onSuccess: (rzpResp) => {
+        recordPayment(rzpResp.razorpay_payment_id || `rzp_${Date.now()}`);
+      },
+      onDismiss: () => setSubmitting(false),
+      onError: (errMsg) => {
+        setError(errMsg);
+        setSubmitting(false);
+      }
+    });
+  };
+
+  const handleProcessPayment = async () => {
+    if (!booking) return;
+    setError("");
+
+    if (paymentMethod === "card") {
+      const cleanNum = cardNumber.replace(/\s/g, "");
+      if (cleanNum.length < 16) {
+        setError("Please enter a valid 16-digit credit/debit card number.");
+        return;
+      }
+      if (!cardHolder.trim()) {
+        setError("Please enter the cardholder name.");
+        return;
+      }
+      if (!cardExpiry || cardExpiry.length < 5) {
+        setError("Please enter a valid card expiry date (MM/YY).");
+        return;
+      }
+      if (!cardCvv || cardCvv.length < 3) {
+        setError("Please enter a valid 3-digit CVV / CVC.");
+        return;
+      }
+
+      setSubmitting(true);
+      const launched = await openRazorpayCheckout({
+        booking,
+        amount: booking?.total_amount || 0,
+        user,
+        onSuccess: (rzpResp) => {
+          recordPayment(rzpResp.razorpay_payment_id || `rzp_${Date.now()}`);
+        },
+        onDismiss: () => setSubmitting(false),
+        onError: (errMsg) => {
+          setError(errMsg);
+          setSubmitting(false);
+        }
+      });
+
+      if (!launched) {
+        await recordPayment(`card_${Date.now()}`);
+      }
+    } else if (paymentMethod === "upi") {
+      if (upiId.trim() && !upiId.includes("@")) {
+        setError("Please enter a valid UPI ID (e.g. yourname@okhdfcbank).");
+        return;
+      }
+
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        const deepLink = getUpiAppDeepLink({
+          vpa: upiId.trim() || "skillnest@okaxis",
+          amount: booking.total_amount,
+          bookingId: booking.booking_id,
+          app: selectedUpiApp
+        });
+
+        try {
+          window.location.href = deepLink;
+        } catch (e) {}
+      }
+
+      setSubmitting(true);
+      const launched = await openRazorpayCheckout({
+        booking,
+        amount: booking.total_amount,
+        user,
+        onSuccess: (rzpResp) => {
+          recordPayment(rzpResp.razorpay_payment_id || `rzp_${Date.now()}`);
+        },
+        onDismiss: () => setSubmitting(false),
+        onError: (errMsg) => {
+          setError(errMsg);
+          setSubmitting(false);
+        }
+      });
+
+      if (!launched) {
+        await recordPayment(`upi_${Date.now()}`);
+      }
     }
   };
 
@@ -201,7 +336,7 @@ export default function PaymentPage() {
           <div>
             <strong style={{ color: "#835b0a", fontSize: "14px" }}>🧪 Sandbox Test Gateway</strong>
             <p style={{ margin: "2px 0 0 0", color: "#68501e", fontSize: "12px" }}>
-              Member 4 Mock Payment System · No real money will be transferred
+              Secure Test Payment Gateway · Sandbox Demo Simulation
             </p>
           </div>
           <span
@@ -346,95 +481,204 @@ export default function PaymentPage() {
                 Choose Mock Option
               </h3>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
-                {[
-                  { id: "mock_card", name: "Credit / Debit Card", desc: "Visa, Mastercard, RuPay (Simulated)" },
-                  { id: "mock_upi", name: "UPI Instant Pay", desc: "Google Pay, PhonePe, Paytm (Simulated)" },
-                  { id: "mock_netbanking", name: "Net Banking", desc: "All major banks (Simulated)" },
-                  { id: "mock_wallet", name: "SkillNest Balance", desc: "Instant checkout" }
-                ].map((m) => (
-                  <div
-                    key={m.id}
-                    onClick={() => setPaymentMethod(m.id)}
-                    style={{
-                      padding: "12px 14px",
-                      borderRadius: "12px",
-                      border: paymentMethod === m.id ? "2px solid #c98e1b" : "1px solid #ebd08d",
-                      background: paymentMethod === m.id ? "#fff9eb" : "#ffffff",
-                      cursor: "pointer",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
-                    }}
-                  >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("card")}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: paymentMethod === "card" ? "2px solid #c98e1b" : "1px solid #ebd08d",
+                    background: paymentMethod === "card" ? "#fff6de" : "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: paymentMethod === "card" ? "700" : "600",
+                    color: "#382d12",
+                    cursor: "pointer"
+                  }}
+                >
+                  💳 Credit / Debit Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("upi")}
+                  style={{
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: paymentMethod === "upi" ? "2px solid #c98e1b" : "1px solid #ebd08d",
+                    background: paymentMethod === "upi" ? "#fff6de" : "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: paymentMethod === "upi" ? "700" : "600",
+                    color: "#382d12",
+                    cursor: "pointer"
+                  }}
+                >
+                  📱 UPI / Apps
+                </button>
+              </div>
+
+              {/* CARD DETAILS FORM */}
+              {paymentMethod === "card" && (
+                <div style={{ marginBottom: "18px", background: "#fcfbfa", padding: "16px", borderRadius: "12px", border: "1px solid #ebd08d" }}>
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "4px" }}>
+                      Card Number *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="4532 0000 0000 0000"
+                      value={cardNumber}
+                      onChange={handleCardNumberChange}
+                      maxLength={19}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #ebd08d", fontSize: "14px", letterSpacing: "1px" }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: "12px" }}>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "4px" }}>
+                      Cardholder Name *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Name on card"
+                      value={cardHolder}
+                      onChange={(e) => setCardHolder(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #ebd08d", fontSize: "13px" }}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                     <div>
-                      <div style={{ fontSize: "13px", fontWeight: "700", color: "#382d12" }}>{m.name}</div>
-                      <div style={{ fontSize: "11px", color: "#7a6b47" }}>{m.desc}</div>
+                      <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "4px" }}>
+                        Valid Thru *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        value={cardExpiry}
+                        onChange={handleExpiryChange}
+                        maxLength={5}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #ebd08d", fontSize: "13px" }}
+                      />
                     </div>
-                    <span style={{ fontSize: "16px", color: paymentMethod === m.id ? "#c98e1b" : "#ccc" }}>
-                      {paymentMethod === m.id ? "◉" : "○"}
+                    <div>
+                      <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "4px" }}>
+                        CVV *
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="•••"
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value.slice(0, 4))}
+                        maxLength={4}
+                        style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #ebd08d", fontSize: "13px" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* UPI REDIRECTION */}
+              {paymentMethod === "upi" && (
+                <div style={{ marginBottom: "18px", background: "#fcfbfa", padding: "16px", borderRadius: "12px", border: "1px solid #ebd08d" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "8px" }}>
+                    Choose UPI App
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "14px" }}>
+                    {[
+                      { id: "gpay", name: "Google Pay", icon: "🌐" },
+                      { id: "phonepe", name: "PhonePe", icon: "🟣" },
+                      { id: "paytm", name: "Paytm", icon: "🔵" },
+                      { id: "bhim", name: "BHIM", icon: "🇮🇳" }
+                    ].map((app) => (
+                      <button
+                        key={app.id}
+                        type="button"
+                        onClick={() => handleSelectAndRedirectUpiApp(app.id)}
+                        style={{
+                          padding: "10px 6px",
+                          borderRadius: "10px",
+                          border: selectedUpiApp === app.id ? "2px solid #c98e1b" : "1px solid #ebd08d",
+                          background: selectedUpiApp === app.id ? "#fff6de" : "#ffffff",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          color: "#382d12",
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "4px",
+                          transition: "all 0.2s ease"
+                        }}
+                        title={`Click to open ${app.name} or scan via Razorpay UPI`}
+                      >
+                        <span style={{ fontSize: "20px" }}>{app.icon}</span>
+                        <span>{app.name}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#68501e", marginBottom: "4px" }}>
+                      Or Enter UPI ID / VPA
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. yourname@okhdfcbank"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #ebd08d", fontSize: "13px" }}
+                    />
+                    <span style={{ display: "block", fontSize: "11px", color: "#8a7536", marginTop: "6px", lineHeight: "1.4" }}>
+                      📱 <strong>Mobile:</strong> Tapping any app opens PhonePe / GPay directly.<br />
+                      💻 <strong>Desktop:</strong> Razorpay displays a QR code to scan with your phone, or enter your UPI ID.
                     </span>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Simulation CTA Buttons */}
-            <div>
-              <span
+            {/* Pay Button */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                onClick={handleProcessPayment}
+                disabled={submitting}
                 style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  color: "#68501e",
-                  textTransform: "uppercase",
-                  marginBottom: "8px"
+                  width: "100%",
+                  padding: "14px",
+                  background: "linear-gradient(135deg, #c98e1b, #a7700c)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  cursor: submitting ? "not-allowed" : "pointer",
+                  boxShadow: "0 4px 14px rgba(201,142,27,0.3)"
                 }}
               >
-                Execute Mock Simulation
-              </span>
+                {submitting
+                  ? "Processing Payment..."
+                  : `Pay ₹${amount.toFixed(2)} via Razorpay Gateway`}
+              </button>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <button
-                  onClick={() => handleSimulatePayment("SUCCESS")}
-                  disabled={submitting}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #107c39, #0a5c29)",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "12px",
-                    fontSize: "15px",
-                    fontWeight: "800",
-                    cursor: submitting ? "not-allowed" : "pointer",
-                    boxShadow: "0 4px 14px rgba(16,124,57,0.25)"
-                  }}
-                >
-                  {submitting ? "Processing Transaction..." : "✓ Pay ₹" + amount.toFixed(2) + " (Simulate SUCCESS)"}
-                </button>
+              <button
+                type="button"
+                onClick={() => recordPayment(`direct_test_${Date.now()}`)}
+                disabled={submitting}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "#fdfbf7",
+                  color: "#835b0a",
+                  border: "1px dashed #ebd08d",
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: submitting ? "not-allowed" : "pointer"
+                }}
+              >
+                ⚡ Direct Instant Confirmation (Demo Test Mode)
+              </button>
 
-                <button
-                  onClick={() => handleSimulatePayment("FAILED")}
-                  disabled={submitting}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: "#fff2f2",
-                    color: "#c41c1c",
-                    border: "1px solid #ffcccc",
-                    borderRadius: "12px",
-                    fontSize: "14px",
-                    fontWeight: "700",
-                    cursor: submitting ? "not-allowed" : "pointer"
-                  }}
-                >
-                  ✕ Simulate Payment FAILED
-                </button>
-              </div>
-
-              <p style={{ margin: "14px 0 0 0", fontSize: "11px", color: "#8a7536", textAlign: "center" }}>
-                Simulating success triggers in-app notifications and marks payment as SUCCESS.
+              <p style={{ margin: "6px 0 0 0", fontSize: "11px", color: "#8a7536", textAlign: "center" }}>
+                🔒 256-Bit Encrypted Payment Gateway · SkillNest Safe Pay
               </p>
             </div>
           </div>

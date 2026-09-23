@@ -11,6 +11,11 @@ const serviceRoutes = require("./src/routes/serviceRoutes");
 const bookingRoutes = require("./src/routes/bookingRoutes");
 const paymentRoutes = require("./src/modules/payments-notifications/payment.routes");
 const notificationRoutes = require("./src/modules/payments-notifications/notification.routes");
+const verificationRoutes = require("./src/modules/verification/verification.routes");
+const portfolioRoutes = require("./src/modules/portfolio/portfolio.routes");
+const serviceRequestRoutes = require("./src/modules/service-requests/serviceRequest.routes");
+const aiRoutes = require("./src/modules/ai/ai.routes");
+const locationRoutes = require("./src/modules/location/location.routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +33,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve uploaded images statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Parse JSON request bodies
 app.use(express.json());
 
@@ -39,6 +47,12 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/verification", verificationRoutes);
+app.use("/api/admin/verifications", verificationRoutes);
+app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/service-requests", serviceRequestRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/location", locationRoutes);
 
 // Health check endpoint
 app.get("/api/health", async (req, res) => {

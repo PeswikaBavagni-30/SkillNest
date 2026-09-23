@@ -1,0 +1,140 @@
+[
+  {
+    "id": "ver_1790024385969_wdtd",
+    "user_id": "24f7f52c-d29a-42be-b311-ec7776ced7f6",
+    "status": "PENDING",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790024385969_HSA4N",
+    "documents": [
+      {
+        "id": "doc_1790024385973_wt0le",
+        "document_type": "Government ID",
+        "original_name": "Screenshot (1).png",
+        "filename": "doc_1790024385946_x4fuyf.png",
+        "mime_type": "image/png",
+        "file_size": 341196,
+        "storage_path": "private_uploads/documents/doc_1790024385946_x4fuyf.png",
+        "uploaded_at": "2026-09-21T20:59:45.973Z"
+      }
+    ],
+    "verified_at": null,
+    "created_at": "2026-09-21T20:59:45.969Z",
+    "updated_at": "2026-09-21T20:59:45.973Z"
+  },
+  {
+    "id": "ver_1790018461943_gs2d",
+    "user_id": "c91f39a9-4fd2-4a83-9e14-2c65daf5d1e9",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790018461942_N7854",
+    "documents": [
+      {
+        "id": "doc_1790018461944_vifb9",
+        "document_type": "Government ID",
+        "original_name": "Screenshot (1).png",
+        "filename": "doc_1790018461915_4hhw54.png",
+        "mime_type": "image/png",
+        "file_size": 341196,
+        "storage_path": "private_uploads/documents/doc_1790018461915_4hhw54.png",
+        "uploaded_at": "2026-09-21T19:21:01.944Z"
+      }
+    ],
+    "verified_at": "2026-09-21T19:21:12.902Z",
+    "created_at": "2026-09-21T19:21:01.942Z",
+    "updated_at": "2026-09-21T19:21:12.902Z",
+    "failure_reason": null
+  },
+  {
+    "id": "ver_1790014532589_mtgu",
+    "user_id": "06f3c29d-1923-410e-8d57-6c04b1813117",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790014532589_7QW8E",
+    "documents": [],
+    "verified_at": "2026-09-21T18:15:34.596Z",
+    "created_at": "2026-09-21T18:15:32.589Z",
+    "updated_at": "2026-09-21T18:15:34.596Z",
+    "failure_reason": null
+  },
+  {
+    "id": "ver_1790014443540_lcuq",
+    "user_id": "bd2205db-82b9-45b3-a955-25bf55a6ed06",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790016812917_ROWEU",
+    "documents": [
+      {
+        "id": "doc_1790016813528_xqoht",
+        "document_type": "Government ID",
+        "original_name": "aadhaar_mock.png",
+        "filename": "doc_1790016813523_dddxw0.png",
+        "mime_type": "image/png",
+        "file_size": 39,
+        "storage_path": "private_uploads/documents/doc_1790016813523_dddxw0.png",
+        "uploaded_at": "2026-09-21T18:53:33.528Z"
+      }
+    ],
+    "verified_at": "2026-09-21T18:53:40.321Z",
+    "created_at": "2026-09-21T18:14:03.539Z",
+    "updated_at": "2026-09-21T18:53:40.321Z",
+    "failure_reason": null,
+    "rejected_by_admin": "d7cefa02-07a0-48b6-add5-60b1df0922dc",
+    "verified_by_admin": "d7cefa02-07a0-48b6-add5-60b1df0922dc"
+  },
+  {
+    "id": "ver_1790013704865_sem0",
+    "user_id": "e15a65cd-0733-4ff2-9a72-4eca048fcef2",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790013704865_30A2W",
+    "verified_at": "2026-09-21T18:01:47.870Z",
+    "created_at": "2026-09-21T18:01:44.865Z",
+    "updated_at": "2026-09-21T18:01:47.870Z",
+    "failure_reason": "Document glare"
+  },
+  {
+    "id": "ver_1790013628241_tknx",
+    "user_id": "bf40cc06-3230-487f-936c-eaba90d2cf99",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790013628240_JXD9P",
+    "verified_at": "2026-09-21T18:00:31.323Z",
+    "created_at": "2026-09-21T18:00:28.240Z",
+    "updated_at": "2026-09-21T18:00:31.323Z",
+    "failure_reason": "Document glare"
+  },
+  {
+    "id": "ver_1790013431090_iaql",
+    "user_id": "701f3953-a526-45f9-9e0c-6e32ecd942cd",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790013431089_5JVO4",
+    "verified_at": "2026-09-21T17:57:14.069Z",
+    "created_at": "2026-09-21T17:57:11.089Z",
+    "updated_at": "2026-09-21T17:57:14.069Z",
+    "failure_reason": "Document glare"
+  },
+  {
+    "id": "ver_1790013348827_hpfb",
+    "user_id": "2ec859a4-02fa-4f5c-a0b0-0ae582d13de5",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790014505755_W44FW",
+    "documents": [],
+    "verified_at": "2026-09-21T18:15:07.922Z",
+    "created_at": "2026-09-21T17:55:48.826Z",
+    "updated_at": "2026-09-21T18:15:07.922Z",
+    "failure_reason": null
+  },
+  {
+    "id": "ver_1790013242686_lm0d",
+    "user_id": "2c527e72-ade2-4148-87c8-49eb1f931248",
+    "status": "VERIFIED",
+    "provider": "MOCK_DEVELOPMENT_KYC",
+    "verification_reference": "kyc_ref_1790013262654_G7O2C",
+    "verified_at": "2026-09-21T17:54:25.720Z",
+    "created_at": "2026-09-21T17:54:02.685Z",
+    "updated_at": "2026-09-21T17:54:25.720Z",
+    "failure_reason": "Document glare"
+  }
+]

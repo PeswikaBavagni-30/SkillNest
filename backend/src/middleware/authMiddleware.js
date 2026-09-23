@@ -96,6 +96,7 @@ const authenticateToken = async (req, res, next) => {
  * e.g. requireRole(["CUSTOMER"]) or requireRole(["PROVIDER"])
  */
 const requireRole = (allowedRoles) => {
+  const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -104,13 +105,13 @@ const requireRole = (allowedRoles) => {
       });
     }
 
-    const userRole = req.user.role.toUpperCase();
-    const normalizedAllowed = allowedRoles.map((r) => r.toUpperCase());
+    const userRole = (req.user.role || "").toUpperCase();
+    const normalizedAllowed = rolesArray.map((r) => r.toUpperCase());
 
     if (!normalizedAllowed.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden. This action requires ${allowedRoles.join(" or ")} access.`
+        message: `Forbidden. This action requires ${rolesArray.join(" or ")} access.`
       });
     }
 
